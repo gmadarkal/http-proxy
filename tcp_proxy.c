@@ -481,7 +481,7 @@ void echo(int connfd) {
             } else {
                 keepAlive = 0;
             }
-            if (strcmp(request.request_method, "GET") == 0 || strcmp(request.request_method, "CONNECT") == 0) {
+            if (strcmp(request.request_method, "GET") == 0) {
                 // thread locked to send req to server and read response
                 pthread_mutex_lock(&lock_m);
                 // check if the resource exists in cache.
@@ -534,6 +534,23 @@ void echo(int connfd) {
                 }
                 bzero(resource_hash, SHA_DIGEST_LENGTH);
                 pthread_mutex_unlock(&lock_m);
+            } else if (strcmp(request.request_method, "CONNECT") == 0) {
+                int server_conn = create_server_conn(request, connfd);
+                if (server_conn > 0) {
+                    write(server_conn, buf, sizeof(buf));
+                    bzero(response_str, sizeof(response_str));
+                    while (n > 0) {
+                        n = read(server_conn, response_str, sizeof(response_str));
+                        if (n < 0) {
+                            printf("server finished writing on connection \n");
+                            close(server_conn);
+                            break;
+                        } else {
+                            write(connfd, response_str, sizeof(response_str));
+                        }
+                        bzero(response_str, sizeof(response_str));
+                    }
+                }
             } else {
                 char *contents = "<html><head><title>400 Bad request</title></head><body><h2>4400 Http method not supported</h2></body></html>";
                 char content_length[10];
@@ -626,7 +643,11 @@ struct HostDetails fetch_host_address(char *request_address) {
             port[j] = request_address[i];
             i++;j++;
         }
-        details.port= atoi(port);
+        port[j] = '\0';
+        if (strcmp(port, "443") == 0) {
+            details.addressFound = 0;
+        }
+        details.port = atoi(port);
     } else {
         details.isLocal = 0;
         for (i = 0; i < 100; i++) {
@@ -732,7 +753,11 @@ int create_server_conn(struct HttpRequest request, int client_conn) {
             hostdet = gethostbyname(request.host);
             strcpy(ipaddress, inet_ntoa(*(struct in_addr*)hostdet->h_addr));
             servaddr.sin_addr.s_addr = inet_addr(ipaddress);
-            servaddr.sin_port = htons(80);
+            if (details.port == 443) {
+                servaddr.sin_port = htons(443);
+            } else {
+                servaddr.sin_port = htons(80);
+            }
         }
         int is_blacklisted = check_blacklist(client_conn, ipaddress);
         if (is_blacklisted) {
@@ -740,12 +765,13 @@ int create_server_conn(struct HttpRequest request, int client_conn) {
         }
         // connect the client socket to server socket
         if (connect(sockfd, (SA*)&servaddr, sizeof(servaddr)) != 0) {
-            printf("connection with the server failed...trying again after 2secs timeout\n");
-            if (retries == 3) {
-                return -1;
-            }
-            retries++;
-            sleep(60);
+            // printf("connection with the server failed...trying again after 60secs timeout\n");
+            // if (retries == 3) {
+            //     printf("failed after 3 retries, closing socket");
+            return -1;
+            // }
+            // retries++;
+            // sleep(60);
             // exit(0);
         }
         else {

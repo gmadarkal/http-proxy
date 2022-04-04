@@ -432,8 +432,8 @@ void echo(int connfd) {
     struct HttpResponse response;
     pthread_mutex_t lock_m;
     pthread_t parser_thread;
-    // char *filehash = malloc(1000);
-    unsigned char resource_hash[SHA_DIGEST_LENGTH];
+    char *resource_hash = malloc(1000);
+    unsigned char filehash[SHA_DIGEST_LENGTH];
     char *response_str;
     response_str = malloc(200000 * sizeof(char));
     n = read(connfd, buf, MAXLINE);
@@ -453,7 +453,10 @@ void echo(int connfd) {
                 // check if the resource exists in cache.
                 // getmd5sum(request.resource, hash);
                 size_t length = strlen(request.resource);
-                SHA1(request.resource, length, resource_hash);
+                SHA1(request.resource, length, filehash);
+                for(i = 0; i < SHA_DIGEST_LENGTH; i++) {
+                	sprintf(&resource_hash[i*2], "%02x", (unsigned int)filehash[i]);
+                }
                 int in_cache = check_cache(resource_hash);
                 if (in_cache) {
                     strcpy(request.resource, resource_hash);

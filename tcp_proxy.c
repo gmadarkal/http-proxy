@@ -635,15 +635,19 @@ struct HostDetails fetch_host_address(char *request_address) {
         hostname[i] = request_address[i];
         i++;
     }
+    hostname[i] = '\0';
+    printf("host: %s \n", hostname);
     if (i < strlen(request_address)) {
         strcpy(details.ipHostName, hostname);
         details.addressFound = 1;
         details.isLocal = 1;
+        i++;
         while(request_address[i] != '\0') {
             port[j] = request_address[i];
             i++;j++;
         }
         port[j] = '\0';
+        printf("port: %s \n", port);
         if (strcmp(port, "443") == 0) {
             details.addressFound = 0;
         }

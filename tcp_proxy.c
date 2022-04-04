@@ -411,8 +411,9 @@ void *prefetching_parser(void * vargp) {
         write(server_conn, request_str, strlen(request_str));
         size_t length = strlen(file_links[i]);
         SHA1(file_links[i], length, filehash);
-        for(i = 0; i < SHA_DIGEST_LENGTH; i++) {
-            sprintf(&resource_hash[i*2], "%02x", (unsigned int)filehash[i]);
+        int j = 0;
+        for(j = 0; j < SHA_DIGEST_LENGTH; j++) {
+            sprintf(&resource_hash[j*2], "%02x", (unsigned int)filehash[j]);
         }
         if (exists(resource_hash) == 0) {
             new_file = fopen(resource_hash, "wb+");
@@ -435,7 +436,6 @@ void *prefetching_parser(void * vargp) {
             printf("link content already exists in cache \n");
         }
         bzero(request_str, sizeof(request_str));
-        bzero(new_filename, sizeof(new_filename));
         i++;
     }
     close(server_conn);

@@ -750,7 +750,14 @@ int create_server_conn(struct HttpRequest request, int client_conn) {
             servaddr.sin_port = htons(details.port);
         } else {
             printf("address not found in cache \n");
-            hostdet = gethostbyname(request.host);
+            if (details.port == 443) {
+                hostdet = gethostbyname(details.ipHostName);
+            } else {
+                hostdet = gethostbyname(request.host);
+            }
+            if (!hostdet) {
+                return -1;
+            }
             strcpy(ipaddress, inet_ntoa(*(struct in_addr*)hostdet->h_addr));
             servaddr.sin_addr.s_addr = inet_addr(ipaddress);
             if (details.port == 443) {

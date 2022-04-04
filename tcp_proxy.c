@@ -12,6 +12,7 @@
 #include <dirent.h>
 #include <time.h>
 #include <openssl/sha.h>
+#include <signal.h>
 
 #define MAXLINE  8192  /* max text line length */
 #define MAXBUF   8192  /* max I/O buffer size */
@@ -60,11 +61,17 @@ char host_names_cache_list[100][1000];
 char host_addresses_cache_list[100][1000];
 int cache_timeout;
 
+void sig_handler(int signum) {
+    printf("Server terminated connection \n");
+}
+
 int main(int argc, char **argv)
 {
     int listenfd, *connfdp, port, clientlen=sizeof(struct sockaddr_in);
     struct sockaddr_in clientaddr;
     pthread_t tid;
+
+    signal(SIGPIPE, sig_handler);
     
     if (argc != 3) {
         fprintf(stderr, "usage: %s <port> <timeout>\n", argv[0]);
@@ -387,7 +394,7 @@ void *prefetching_parser(void * vargp) {
     int server_conn = create_server_conn(request, 0);
     char *request_str = malloc(20000);
     char *response_str = malloc(200000);
-    int n = 1;
+    int n = 1; int w = 0;
     FILE *new_file;
     char *resource_hash = malloc(1000);
     unsigned char filehash[SHA_DIGEST_LENGTH];
@@ -395,6 +402,7 @@ void *prefetching_parser(void * vargp) {
         bzero(filehash, SHA_DIGEST_LENGTH);
         bzero(resource_hash, 1000);
         n = 1;
+        w = 0;
         printf("Found a link: %s \n", file_links[i]);
         strcpy(request_str, "GET ");
         strcat(request_str, file_links[i]);
@@ -410,7 +418,10 @@ void *prefetching_parser(void * vargp) {
             strcat(request_str, "Connection: Keep-alive\r\n\r\n");
         }
         printf("%s \n", request_str);
-        write(server_conn, request_str, strlen(request_str));
+        w = write(server_conn, request_str, strlen(request_str));
+        if (w <= 0) {
+            continue;
+        }
         size_t length = strlen(file_links[i]);
         SHA1(file_links[i], length, filehash);
         int j = 0;

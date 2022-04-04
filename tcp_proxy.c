@@ -465,6 +465,7 @@ void echo(int connfd) {
     struct HttpRequest request;
     struct HttpResponse response;
     pthread_mutex_t lock_m;
+    pthread_mutex_t lock_m_1;
     pthread_t parser_thread;
     char *resource_hash = malloc(1000);
     unsigned char filehash[SHA_DIGEST_LENGTH];
@@ -535,6 +536,7 @@ void echo(int connfd) {
                 bzero(resource_hash, SHA_DIGEST_LENGTH);
                 pthread_mutex_unlock(&lock_m);
             } else if (strcmp(request.request_method, "CONNECT") == 0) {
+                pthread_mutex_lock(&lock_m_1);
                 int server_conn = create_server_conn(request, connfd);
                 if (server_conn > 0) {
                     char *request_str = malloc(20000);
@@ -548,6 +550,7 @@ void echo(int connfd) {
                     strcat(request_str, "\r\n\r\n");
                     write(server_conn, request_str, sizeof(request_str));
                     bzero(response_str, sizeof(response_str));
+                    n = 1;
                     while (n > 0) {
                         n = read(server_conn, response_str, sizeof(response_str));
                         if (n < 0) {
@@ -560,6 +563,7 @@ void echo(int connfd) {
                         bzero(response_str, sizeof(response_str));
                     }
                 }
+                pthread_mutex_unlock(&lock_m_1);
             } else {
                 char *contents = "<html><head><title>400 Bad request</title></head><body><h2>4400 Http method not supported</h2></body></html>";
                 char content_length[10];

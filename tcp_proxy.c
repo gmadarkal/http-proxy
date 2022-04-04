@@ -387,8 +387,6 @@ void *prefetching_parser(void * vargp) {
     char *response_str = malloc(200000);
     int n = 1;
     FILE *new_file;
-    char timestamp[15];
-    char *new_filename = malloc(1000);
     char *resource_hash = malloc(1000);
     unsigned char filehash[SHA_DIGEST_LENGTH];
     while (i <= link_index) {
@@ -432,10 +430,11 @@ void *prefetching_parser(void * vargp) {
                 }
                 bzero(buf, sizeof(buf));
             }
+            fclose(new_file);
+        } else {
+            printf("link content already exists in cache \n");
         }
-        fclose(new_file);
         bzero(request_str, sizeof(request_str));
-        bzero(timestamp, sizeof(timestamp));
         bzero(new_filename, sizeof(new_filename));
         i++;
     }
@@ -728,7 +727,7 @@ int create_server_conn(struct HttpRequest request, int client_conn) {
         }
         else {
             if (!details.addressFound) {
-                printf("caching the server address"); 
+                printf("caching the server address \n"); 
                 bzero(full_address, 200);
                 strcpy(host_names_cache_list[curr_host_names_len], request.host);
                 strcat(full_address, ipaddress);

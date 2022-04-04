@@ -693,7 +693,7 @@ int create_server_conn(struct HttpRequest request, int client_conn) {
         sockfd = socket(AF_INET, SOCK_STREAM, 0);
         if (sockfd == -1) {
             printf("socket creation failed...\n");
-            exit(0);
+            // exit(0);
         }
         else
             printf("Socket successfully created..\n");
@@ -724,7 +724,7 @@ int create_server_conn(struct HttpRequest request, int client_conn) {
         // connect the client socket to server socket
         if (connect(sockfd, (SA*)&servaddr, sizeof(servaddr)) != 0) {
             printf("connection with the server failed...trying again after 2secs timeout\n");
-            sleep(2000);
+            sleep(2);
             // exit(0);
         }
         else {

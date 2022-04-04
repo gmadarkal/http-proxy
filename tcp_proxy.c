@@ -11,7 +11,7 @@
 #include <sys/time.h>
 #include <dirent.h>
 #include <time.h>
-#include <openssl/md5.h>
+#include <openssl/sha.h>
 
 #define MAXLINE  8192  /* max text line length */
 #define MAXBUF   8192  /* max I/O buffer size */
@@ -273,7 +273,7 @@ struct HttpResponse getResponseContents(struct HttpRequest request) {
     return response;
 }
 
-char* getmd5sum(char *file) {
+char* getmd5sum(char *file, unsigned char hash[SHA_DIGEST_LENGTH]) {
     // unsigned char c[MD5_DIGEST_LENGTH];
     // char *filename="file.c";
     // int i;
@@ -297,10 +297,7 @@ char* getmd5sum(char *file) {
 	// }
     // fclose (inFile);
     size_t length = strlen(file);
-
-    unsigned char hash[SHA_DIGEST_LENGTH];
-    // return filemd5;
-    SHA1(data, length, hash);
+    SHA1(file, length, hash);
     printf("%s", hash);
     return hash;
     // return "12345xasd";
@@ -435,6 +432,8 @@ void echo(int connfd) {
     struct HttpResponse response;
     pthread_mutex_t lock_m;
     pthread_t parser_thread;
+    // char *filehash = malloc(1000);
+    unsigned char resource_hash[SHA_DIGEST_LENGTH];
     char *response_str;
     response_str = malloc(200000 * sizeof(char));
     n = read(connfd, buf, MAXLINE);
@@ -452,7 +451,9 @@ void echo(int connfd) {
                 // thread locked to send req to server and read response
                 pthread_mutex_lock(&lock_m);
                 // check if the resource exists in cache.
-                char* resource_hash = getmd5sum(request.resource);
+                // getmd5sum(request.resource, hash);
+                size_t length = strlen(request.resource);
+                SHA1(request.resource, length, resource_hash);
                 int in_cache = check_cache(resource_hash);
                 if (in_cache) {
                     strcpy(request.resource, resource_hash);
@@ -493,6 +494,7 @@ void echo(int connfd) {
                     }
                     close(server_conn);
                 }
+                bzero(resource_hash, SHA_DIGEST_LENGTH);
                 pthread_mutex_unlock(&lock_m);
             } else {
                 char *contents = "<html><head><title>404 File Not Found</title></head><body><h2>404 File Not Found</h2></body></html>";

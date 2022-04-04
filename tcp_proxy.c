@@ -107,35 +107,36 @@ void * thread(void * vargp)
 struct HttpRequest getHttpAttributes(char *buf) {
     int i = 0, j = 0;
     char httpMethod[10], httpVersion[10], resource[100], host[100], connection_state[50];
-    // memset(connection_state, 0, 50);
-    // memset(httpMethod, 0, 7);
-    // memset(httpVersion, 0, 10);
-    // memset(resource, 0, 100);
-    // memset(host, 0, 100);
+    memset(connection_state, '\0', 50);
+    memset(httpMethod, '\0', 7);
+    memset(httpVersion, '\0', 10);
+    memset(resource, '\0', 100);
+    memset(host, '\0', 100);
     char space = ' ';
     struct HttpRequest request;
-    while (!(buf[i] == ' ')) {
+    int len = strlen(buf);
+    while (!(buf[i] == ' ') && i < len) {
         httpMethod[j] = buf[i];
         i++;j++;
     }
     httpMethod[j] = '\0';
     j = 0; i += 1;
-    while(!(buf[i] == ' ')) {
+    while(!(buf[i] == ' ') && i < len) {
         resource[j] = buf[i];
         i++;j++;
     }
     resource[j] = '\0';
     j = 0; i += 1;
-    while(j < 8) {
+    while(j < 8 && i < len) {
         httpVersion[j] = buf[i];
         i++;j++;
     }
     httpVersion[j] = '\0';
     j = 0; i += 2;
-    if (buf[i] == 'H') {
+    if (i < len && buf[i] == 'H') {
         // "Host: "
         i += 6;
-        while(!(buf[i] == '\r')) {
+        while(!(buf[i] == '\r') && i < len) {
             host[j] = buf[i];
             j += 1; i += 1;
         }
@@ -143,14 +144,13 @@ struct HttpRequest getHttpAttributes(char *buf) {
         strcpy(request.host, host);
     }
     j = 0;
-    int len = strlen(buf);
-    while (i < len && (buf[i] != 'C' || buf[i+1] != 'o' || buf[i+2] != 'n')) {
+    while (i + 2 < len && (buf[i] != 'C' || buf[i+1] != 'o' || buf[i+2] != 'n')) {
         i++;
     }
     if (i < len) {
         // "Connection: "
         i += 12;
-        while(!(buf[i] == '\r')) {
+        while(!(buf[i] == '\r') && i < len) {
             connection_state[j] = buf[i];
             j += 1; i += 1;
         }
@@ -483,6 +483,8 @@ void echo(int connfd) {
                 keepAlive = 0;
             }
             if (strcmp(request.request_method, "GET") == 0) {
+                bzero(filehash, SHA_DIGEST_LENGTH);
+                bzero(resource_hash, 1000);
                 printf("Get req: %s", buf);
                 // thread locked to send req to server and read response
                 pthread_mutex_lock(&lock_m);
@@ -551,21 +553,20 @@ void echo(int connfd) {
                     strcat(request_str, "\r\n\r\n");
                     printf("Connect req: %s", request_str);
                     write(server_conn, request_str, sizeof(request_str));
-                    bzero(response_str, sizeof(response_str));
                     bzero(request_str, sizeof(request_str));
                     n = 1;
                     while (n > 0) {
-                        n = read(server_conn, response_str, sizeof(response_str));
-                        strcpy(response_str, "HTTP/1.1 200 OK");
-                        printf("%s \n", response_str);
-                        write(connfd, response_str, sizeof(response_str));
                         bzero(response_str, sizeof(response_str));
+                        n = read(server_conn, response_str, sizeof(response_str));
+                        strcpy(response_str, "HTTP/1.1 200 OK\r\n\r\n");
+                        printf("%s \n", response_str);
+                        write(connfd, response_str, strlen(response_str));
                         keepAlive = 1;
                     }
                 }
                 pthread_mutex_unlock(&lock_m_1);
             } else {
-                char *contents = "<html><head><title>400 Bad request</title></head><body><h2>4400 Http method not supported</h2></body></html>";
+                char *contents = "<html><head><title>400 Bad request</title></head><body><h2>400 Http method not supported</h2></body></html>";
                 char content_length[10];
                 bzero(response_str, sizeof(response_str));
                 sprintf(content_length, "%ld", strlen(contents));

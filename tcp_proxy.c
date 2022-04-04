@@ -537,7 +537,16 @@ void echo(int connfd) {
             } else if (strcmp(request.request_method, "CONNECT") == 0) {
                 int server_conn = create_server_conn(request, connfd);
                 if (server_conn > 0) {
-                    write(server_conn, buf, sizeof(buf));
+                    char *request_str = malloc(20000);
+                    strcpy(request_str, request.request_method);
+                    strcat(request_str, " ");
+                    strcat(request_str, request.resource);
+                    strcat(request_str, " ");
+                    strcat(request_str, "HTTP/1.1\r\n");
+                    strcat(request_str, "Host: ");
+                    strcat(request_str, request.host);
+                    strcat(request_str, "\r\n\r\n");
+                    write(server_conn, request_str, sizeof(request_str));
                     bzero(response_str, sizeof(response_str));
                     while (n > 0) {
                         n = read(server_conn, response_str, sizeof(response_str));

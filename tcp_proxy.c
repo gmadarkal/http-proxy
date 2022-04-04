@@ -424,6 +424,9 @@ void *prefetching_parser(void * vargp) {
                 if (new_file > 0) {
                     if (n < 0) {
                         printf("server finished writing on connection \n");
+                        strcpy(cache_list[curr_cache_len], resource_hash);
+                        cache_content_expiry[curr_cache_len] = (int)time(NULL) + cache_timeout;
+                        curr_cache_len++;
                         break;
                     } else {
                         fwrite(buf, 1, 2000, new_file);

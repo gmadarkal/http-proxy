@@ -58,6 +58,7 @@ int curr_cache_len = 0;
 int curr_host_names_len = 0;
 char host_names_cache_list[100][1000];
 char host_addresses_cache_list[100][1000];
+int cache_timeout;
 
 int main(int argc, char **argv)
 {
@@ -65,11 +66,12 @@ int main(int argc, char **argv)
     struct sockaddr_in clientaddr;
     pthread_t tid;
     
-    if (argc != 2) {
-        fprintf(stderr, "usage: %s <port>\n", argv[0]);
+    if (argc != 3) {
+        fprintf(stderr, "usage: %s <port> <timeout>\n", argv[0]);
         exit(0);
     }
     port = atoi(argv[1]);
+    cache_timeout = atoi(argv[2]);
 
     listenfd = open_listenfd(port);
     while (1) {
@@ -506,7 +508,7 @@ void echo(int connfd) {
                             bzero(response_str, sizeof(response_str));
                         }
                         strcpy(cache_list[curr_cache_len], resource_hash);
-                        cache_content_expiry[curr_cache_len] = (int)time(NULL) + 60;
+                        cache_content_expiry[curr_cache_len] = (int)time(NULL) + cache_timeout;
                         struct thread_data *data= malloc (sizeof (struct thread_data));
                         data->file_index = curr_cache_len;
                         strcpy(data->host, request.host);

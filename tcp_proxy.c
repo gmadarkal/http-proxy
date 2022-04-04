@@ -274,29 +274,35 @@ struct HttpResponse getResponseContents(struct HttpRequest request) {
 }
 
 char* getmd5sum(char *file) {
-    unsigned char c[MD5_DIGEST_LENGTH];
-    char *filename="file.c";
-    int i;
-    FILE *inFile = fopen (filename, "rb");
-    MD5_CTX mdContext;
-    int bytes;
-    unsigned char data[1024];
-    char *filemd5 = (char*) malloc(33 *sizeof(char));
+    // unsigned char c[MD5_DIGEST_LENGTH];
+    // char *filename="file.c";
+    // int i;
+    // FILE *inFile = fopen (filename, "rb");
+    // MD5_CTX mdContext;
+    // int bytes;
+    // unsigned char data[1024];
+    // char *filemd5 = (char*) malloc(33 *sizeof(char));
 
-    if (inFile == NULL) {
-        printf ("%s can't be opened.\n", filename);
-        return 0;
-    }
+    // if (inFile == NULL) {
+    //     printf ("%s can't be opened.\n", filename);
+    //     return 0;
+    // }
 
-    MD5_Init (&mdContext);
-    while ((bytes = fread (data, 1, 1024, inFile)) != 0)
-        MD5_Update (&mdContext, data, bytes);
-    MD5_Final(c,&mdContext);
-    for(i = 0; i < MD5_DIGEST_LENGTH; i++) {
-		sprintf(&filemd5[i*2], "%02x", (unsigned int)c[i]);
-	}
-    fclose (inFile);
-    return filemd5;
+    // MD5_Init (&mdContext);
+    // while ((bytes = fread (data, 1, 1024, inFile)) != 0)
+    //     MD5_Update (&mdContext, data, bytes);
+    // MD5_Final(c,&mdContext);
+    // for(i = 0; i < MD5_DIGEST_LENGTH; i++) {
+	// 	sprintf(&filemd5[i*2], "%02x", (unsigned int)c[i]);
+	// }
+    // fclose (inFile);
+    size_t length = strlen(file);
+
+    unsigned char hash[SHA_DIGEST_LENGTH];
+    // return filemd5;
+    SHA1(data, length, hash);
+    printf("%s", hash);
+    return hash;
     // return "12345xasd";
 }
 

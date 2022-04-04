@@ -467,7 +467,7 @@ void echo(int connfd) {
             } else {
                 keepAlive = 0;
             }
-            if (strcmp(request.request_method, "GET") == 0 || strcmp(request.request_method, "Get") == 0) {
+            if (strcmp(request.request_method, "GET") == 0 || strcmp(request.request_method, "CONNECT") == 0) {
                 // thread locked to send req to server and read response
                 pthread_mutex_lock(&lock_m);
                 // check if the resource exists in cache.
@@ -524,7 +524,7 @@ void echo(int connfd) {
                 char *contents = "<html><head><title>404 File Not Found</title></head><body><h2>404 File Not Found</h2></body></html>";
                 char content_length[10];
                 sprintf(content_length, "%ld", strlen(contents));
-                strcat(response_str, request.http_version);
+                strcat(response_str, "HTTP/1.1");
                 strcat(response_str, " ");
                 strcat(response_str, "400");
                 strcat(response_str, " ");

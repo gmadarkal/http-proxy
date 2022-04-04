@@ -535,8 +535,9 @@ void echo(int connfd) {
                 bzero(resource_hash, SHA_DIGEST_LENGTH);
                 pthread_mutex_unlock(&lock_m);
             } else {
-                char *contents = "<html><head><title>404 File Not Found</title></head><body><h2>404 File Not Found</h2></body></html>";
+                char *contents = "<html><head><title>400 Bad request</title></head><body><h2>4400 Http method not supported</h2></body></html>";
                 char content_length[10];
+                bzero(response_str, sizeof(response_str));
                 sprintf(content_length, "%ld", strlen(contents));
                 strcat(response_str, "HTTP/1.1");
                 strcat(response_str, " ");
@@ -552,6 +553,7 @@ void echo(int connfd) {
                 strcat(response_str, "\r\n\r\n");
                 strcat(response_str, contents);
                 write(connfd, response_str, strlen(response_str));
+                bzero(response_str, sizeof(response_str));
             }
             // memset(response_str, 0, strlen(response_str));
             memset(buf, 0, MAXLINE);
@@ -699,6 +701,7 @@ int create_server_conn(struct HttpRequest request, int client_conn) {
     struct hostent *hostdet;
     char ipaddress[100];
     char full_address[200];
+    int retries = 0;
 
     while (1) {
         bzero(full_address, 200);
@@ -738,7 +741,11 @@ int create_server_conn(struct HttpRequest request, int client_conn) {
         // connect the client socket to server socket
         if (connect(sockfd, (SA*)&servaddr, sizeof(servaddr)) != 0) {
             printf("connection with the server failed...trying again after 2secs timeout\n");
-            sleep(2);
+            if (retries == 3) {
+                return -1;
+            }
+            retries++;
+            sleep(60);
             // exit(0);
         }
         else {

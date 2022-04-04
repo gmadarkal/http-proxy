@@ -27,7 +27,7 @@ int create_server_conn();
 
 
 struct HttpRequest {
-    char request_method[7];
+    char request_method[10];
     char http_version[10];
     char resource[100];
     char host[100];
@@ -99,7 +99,7 @@ void * thread(void * vargp)
 
 struct HttpRequest getHttpAttributes(char *buf) {
     int i = 0, j = 0;
-    char httpMethod[7], httpVersion[10], resource[100], host[100], connection_state[50];
+    char httpMethod[10], httpVersion[10], resource[100], host[100], connection_state[50];
     // memset(connection_state, 0, 50);
     // memset(httpMethod, 0, 7);
     // memset(httpVersion, 0, 10);

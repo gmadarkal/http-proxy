@@ -323,6 +323,17 @@ int check_cache(char* hash) {
     return 0;
 }
 
+int exists(const char *fname)
+{
+    FILE *file;
+    if ((file = fopen(fname, "r")))
+    {
+        fclose(file);
+        return 1;
+    }
+    return 0;
+}
+
 void *prefetching_parser(void * vargp) {
     char file_links[100][200];
     char buf[2000];
@@ -378,7 +389,11 @@ void *prefetching_parser(void * vargp) {
     FILE *new_file;
     char timestamp[15];
     char *new_filename = malloc(1000);
+    char *resource_hash = malloc(1000);
+    unsigned char filehash[SHA_DIGEST_LENGTH];
     while (i <= link_index) {
+        bzero(filehash, SHA_DIGEST_LENGTH);
+        bzero(resource_hash, 1000);
         n = 1;
         printf("Found a link: %s \n", file_links[i]);
         strcpy(request_str, "GET ");
@@ -396,23 +411,27 @@ void *prefetching_parser(void * vargp) {
         }
         printf("%s \n", request_str);
         write(server_conn, request_str, strlen(request_str));
-        sprintf(timestamp, "%d", (int)time(NULL));
-        strcpy(new_filename, "xyzabc");
-        strcat(new_filename, timestamp);
-        new_file = fopen(new_filename, "wb+");
-        while(n > 0) {
-            n = read(server_conn, buf, 2000);
-            if (new_file > 0) {
-                if (n < 0) {
-                    printf("server finished writing on connection \n");
-                    break;
+        size_t length = strlen(file_links[i]);
+        SHA1(file_links[i], length, filehash);
+        for(i = 0; i < SHA_DIGEST_LENGTH; i++) {
+            sprintf(&resource_hash[i*2], "%02x", (unsigned int)filehash[i]);
+        }
+        if (exists(resource_hash) == 0) {
+            new_file = fopen(resource_hash, "wb+");
+            while(n > 0) {
+                n = read(server_conn, buf, 2000);
+                if (new_file > 0) {
+                    if (n < 0) {
+                        printf("server finished writing on connection \n");
+                        break;
+                    } else {
+                        fwrite(buf, 1, 2000, new_file);
+                    }
                 } else {
-                    fwrite(buf, 1, 2000, new_file);
+                    printf("failed to create a file \n");
                 }
-            } else {
-                printf("failed to create a file \n");
+                bzero(buf, sizeof(buf));
             }
-            bzero(buf, sizeof(buf));
         }
         fclose(new_file);
         bzero(request_str, sizeof(request_str));
@@ -666,6 +685,8 @@ int create_server_conn(struct HttpRequest request, int client_conn) {
     char full_address[200];
 
     while (1) {
+        bzero(full_address, 200);
+        bzero(ipaddress, 100);
         // socket create and verification
         sockfd = socket(AF_INET, SOCK_STREAM, 0);
         if (sockfd == -1) {
@@ -707,6 +728,7 @@ int create_server_conn(struct HttpRequest request, int client_conn) {
         else {
             if (!details.addressFound) {
                 printf("caching the server address"); 
+                bzero(full_address, 200);
                 strcpy(host_names_cache_list[curr_host_names_len], request.host);
                 strcat(full_address, ipaddress);
                 strcat(full_address, ":");

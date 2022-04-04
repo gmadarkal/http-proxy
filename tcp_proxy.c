@@ -473,7 +473,7 @@ void echo(int connfd) {
     response_str = malloc(200000 * sizeof(char));
     n = read(connfd, buf, MAXLINE);
     if (n > 0 && strlen(buf) > 1) {
-        printf("%s \n", buf);
+        // printf("%s \n", buf);
         while((keepAlive == 1 || is_first == 1) && strlen(buf) > 1) {
             printf("Request made on socket: %d \n", connfd);
             request = getHttpAttributes(buf);
@@ -483,6 +483,7 @@ void echo(int connfd) {
                 keepAlive = 0;
             }
             if (strcmp(request.request_method, "GET") == 0) {
+                printf("Get req: %s", buf);
                 // thread locked to send req to server and read response
                 pthread_mutex_lock(&lock_m);
                 // check if the resource exists in cache.
@@ -548,19 +549,18 @@ void echo(int connfd) {
                     strcat(request_str, "Host: ");
                     strcat(request_str, request.host);
                     strcat(request_str, "\r\n\r\n");
+                    printf("Connect req: %s", request_str);
                     write(server_conn, request_str, sizeof(request_str));
                     bzero(response_str, sizeof(response_str));
+                    bzero(request_str, sizeof(request_str));
                     n = 1;
                     while (n > 0) {
                         n = read(server_conn, response_str, sizeof(response_str));
-                        if (n < 0) {
-                            printf("server finished writing on connection \n");
-                            close(server_conn);
-                            break;
-                        } else {
-                            write(connfd, response_str, sizeof(response_str));
-                        }
+                        strcpy(response_str, "HTTP/1.1 200 OK");
+                        printf("%s \n", response_str);
+                        write(connfd, response_str, sizeof(response_str));
                         bzero(response_str, sizeof(response_str));
+                        keepAlive = 1;
                     }
                 }
                 pthread_mutex_unlock(&lock_m_1);

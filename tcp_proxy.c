@@ -473,6 +473,7 @@ void echo(int connfd) {
                 // getmd5sum(request.resource, hash);
                 size_t length = strlen(request.resource);
                 SHA1(request.resource, length, filehash);
+                int i = 0;
                 for(i = 0; i < SHA_DIGEST_LENGTH; i++) {
                 	sprintf(&resource_hash[i*2], "%02x", (unsigned int)filehash[i]);
                 }
